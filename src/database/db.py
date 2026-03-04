@@ -1,10 +1,17 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
-import os
 
 # Use the connection string provided by the user
 import certifi
 MONGO_URL = os.getenv("MONGO_URL")
+
+if not MONGO_URL:
+    raise ValueError("FATAL ERROR: MONGO_URL environment variable is not set. Please add it to your environment variables.")
+
 client = AsyncIOMotorClient(MONGO_URL, tlsCAFile=certifi.where())
 db = client.room_booking_db
 
