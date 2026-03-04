@@ -1,0 +1,19 @@
+[project]
+name = "room-booking-vibe-code-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "bcrypt>=5.0.0",
+    "fastapi>=0.135.1",
+    "jwt>=1.4.0",
+    "langchain>=1.2.10",
+    "langchain-openai>=1.1.10",
+    "langgraph>=1.0.10",
+    "motor>=3.7.1",
+    "pydantic>=2.12.5",
+    "pyjwt>=2.11.0",
+    "python-dotenv>=1.2.2",
+    "uvicorn>=0.41.0",
+]

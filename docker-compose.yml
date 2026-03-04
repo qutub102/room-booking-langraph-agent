@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: room_agent_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
+  backend:
+    build: .
+    container_name: room_agent_api
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017/roombooking
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    restart: always
+
+  frontend:
+    build: 
+      context: ./ui_v2/room_booking_agent
+    container_name: room_agent_ui
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  mongo_data:

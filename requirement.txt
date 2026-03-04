@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+motor
+langchain
+langchain-openai
+langgraph
+pydantic
+python-dotenv
+PyJWT
+bcrypt
