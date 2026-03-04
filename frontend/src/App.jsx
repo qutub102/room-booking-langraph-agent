@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 // Use /api in production (Docker Nginx proxy), and localhost:8000 in local dev
-const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000'
+const API_BASE = 'https://room-booking-langraph-agent.onrender.com'
 
 /** Convert basic markdown (bold, newlines) to HTML */
 function formatMessage(text) {
