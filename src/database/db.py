@@ -3,8 +3,9 @@ import asyncio
 import os
 
 # Use the connection string provided by the user
+import certifi
 MONGO_URL = os.getenv("MONGO_URL")
-client = AsyncIOMotorClient(MONGO_URL)
+client = AsyncIOMotorClient(MONGO_URL, tlsCAFile=certifi.where())
 db = client.room_booking_db
 
 rooms_collection = db.rooms
