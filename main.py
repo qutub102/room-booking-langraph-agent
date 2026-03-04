@@ -22,7 +22,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Room Booking Agent API",
     description="API for checking and booking meeting rooms via a conversational agent.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(

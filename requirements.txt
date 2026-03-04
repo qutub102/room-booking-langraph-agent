@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 motor
+dnspython
 langchain
 langchain-openai
 langgraph
