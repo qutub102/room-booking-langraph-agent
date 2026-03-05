@@ -317,11 +317,31 @@ function ChatApp({ userName, onLogout }) {
 
       if (!response.ok) throw new Error('Network response was not ok')
 
-      const data = await response.json()
-      setMessages(prev => [...prev, { text: data.response, isUser: false }])
+      // Add an initial empty message for the agent
+      setMessages(prev => [...prev, { text: '', isUser: false }])
+      setIsLoading(false) // Hide the typing indicator since we're streaming now
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let agentMessage = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        agentMessage += chunk
+
+        setMessages(prev => {
+          const newMessages = [...prev]
+          // Update the last message (which belongs to the agent)
+          newMessages[newMessages.length - 1] = { text: agentMessage, isUser: false }
+          return newMessages
+        })
+      }
 
       // Refresh calendar after booking-related messages
-      if (lowerMsg.includes('book') || data.response.toLowerCase().includes('booked')) {
+      if (lowerMsg.includes('book') || agentMessage.toLowerCase().includes('booked') || agentMessage.toLowerCase().includes('available')) {
         await fetchCalendar()
       }
     } catch (error) {

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from src.schemas.schemas import ChatRequest, ChatResponse, CalendarResponse, RoomSchedule, BookingSchema, SignupRequest, LoginRequest, TokenResponse
@@ -110,7 +111,7 @@ async def login(request: LoginRequest):
     token = create_access_token({"email": user["email"], "name": user["name"]})
     return TokenResponse(token=token, name=user["name"])
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     """
     Interact with the Room Booking Agent.
@@ -120,27 +121,34 @@ async def chat_endpoint(request: ChatRequest):
 
     # Load environment variables before anything else
     load_dotenv()
-    print("inside chat",os.getenv("OPENAI_API_KEY"))
+    print("inside chat", os.getenv("OPENAI_API_KEY"))
+    
     if not request.message:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
         
-    try:
-        # Prepend the username context so agent knows the organizer
-        augmented_message = f"[Logged-in user: {request.username}] {request.message}"
-        config = {"configurable": {"thread_id": request.session_id}}
-        result = await agent_executor.ainvoke(
-            {"messages": [("user", augmented_message)]},
-            config=config
-        )
-        
-        # The result is a dict with "messages", where the last message is the AI's response
-        final_response = result["messages"][-1].content
-        
-        return ChatResponse(response=final_response)
-        
-    except Exception as e:
-        print(f"Error executing agent: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    augmented_message = f"[Logged-in user: {request.username}] {request.message}"
+    config = {"configurable": {"thread_id": request.session_id}}
+
+    async def generate():
+        try:
+            # Consume the stream of events
+            async for event in agent_executor.astream_events(
+                {"messages": [("user", augmented_message)]},
+                config=config,
+                version="v2"
+            ):
+                # Filter for model streaming events
+                if event["event"] == "on_chat_model_stream":
+                    # Some chunk events from ChatOpenAI may not have 'content' directly top-level if nested in message list
+                    if "chunk" in event["data"]:
+                        chunk = event["data"]["chunk"]
+                        if chunk.content:
+                            yield chunk.content
+        except Exception as e:
+            print(f"Error executing agent stream: {e}")
+            yield f"\n[Error: {str(e)}]"
+
+    return StreamingResponse(generate(), media_type="text/plain")
 
 if __name__ == "__main__":
     import uvicorn
