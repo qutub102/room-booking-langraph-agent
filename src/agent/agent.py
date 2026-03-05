@@ -19,12 +19,13 @@ api_key = os.getenv("OPENAI_API_KEY")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=api_key)
 
 @tool
-async def check_availability(date: str, start_time: str, capacity: int, room_name: str = None) -> str:
-    """Check room availability for a given date, time, minimum capacity, and optional room name.
+async def check_availability(date: str, start_time: str, end_time: str, capacity: int, room_name: str = None) -> str:
+    """Check room availability for a given date, time range, minimum capacity, and optional room name.
     
     Args:
         date: The date in YYYY-MM-DD format.
         start_time: The start time in HH:MM format (24-hour).
+        end_time: The end time in HH:MM format (24-hour).
         capacity: The number of people attending the meeting.
         room_name: (Optional) The specific name of the room to check.
         
@@ -49,7 +50,8 @@ async def check_availability(date: str, start_time: str, capacity: int, room_nam
             conflicting_bookings_cursor = bookings_collection.find({
                 "room_id": {"$in": eligible_room_ids},
                 "date": date,
-                "start_time": start_time
+                "start_time": {"$lt": end_time},
+                "end_time": {"$gt": start_time}
             })
             conflicting_bookings = await conflicting_bookings_cursor.to_list(length=100)
             booked_room_ids = [booking["room_id"] for booking in conflicting_bookings]
@@ -64,7 +66,8 @@ async def check_availability(date: str, start_time: str, capacity: int, room_nam
             conflict = await bookings_collection.find_one({
                 "room_id": requested_room["_id"],
                 "date": date,
-                "start_time": start_time
+                "start_time": {"$lt": end_time},
+                "end_time": {"$gt": start_time}
             })
             if conflict:
                 return f"Room {requested_room['name']} is already booked at {start_time}."
@@ -80,7 +83,8 @@ async def check_availability(date: str, start_time: str, capacity: int, room_nam
         conflicting_bookings_cursor = bookings_collection.find({
             "room_id": {"$in": eligible_room_ids},
             "date": date,
-            "start_time": start_time
+            "start_time": {"$lt": end_time},
+            "end_time": {"$gt": start_time}
         })
         conflicting_bookings = await conflicting_bookings_cursor.to_list(length=100)
         
@@ -127,7 +131,8 @@ async def book_room(date: str, start_time: str, end_time: str, capacity: int, or
             conflicting_bookings_cursor = bookings_collection.find({
                 "room_id": {"$in": eligible_room_ids},
                 "date": date,
-                "start_time": start_time
+                "start_time": {"$lt": end_time},
+                "end_time": {"$gt": start_time}
             })
             conflicting_bookings = await conflicting_bookings_cursor.to_list(length=100)
             booked_room_ids = [booking["room_id"] for booking in conflicting_bookings]
@@ -142,7 +147,8 @@ async def book_room(date: str, start_time: str, end_time: str, capacity: int, or
             conflict = await bookings_collection.find_one({
                 "room_id": requested_room["_id"],
                 "date": date,
-                "start_time": start_time
+                "start_time": {"$lt": end_time},
+                "end_time": {"$gt": start_time}
             })
             if conflict:
                 return f"Booking failed: Room {requested_room['name']} is already booked at {start_time}."
@@ -159,7 +165,8 @@ async def book_room(date: str, start_time: str, end_time: str, capacity: int, or
         conflicting_bookings_cursor = bookings_collection.find({
             "room_id": {"$in": eligible_room_ids},
             "date": date,
-            "start_time": start_time
+            "start_time": {"$lt": end_time},
+            "end_time": {"$gt": start_time}
         })
         conflicting_bookings = await conflicting_bookings_cursor.to_list(length=100)
         

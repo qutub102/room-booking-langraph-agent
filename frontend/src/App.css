@@ -86,17 +86,7 @@
   transform: scale(1.05);
 }
 
-/* Calendar Overlay */
-.calendar-overlay {
-  position: relative;
-  background: rgba(15, 23, 42, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  animation: calendarFadeIn 0.3s ease-out forwards;
-  max-height: 50vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
+/* ─── Calendar Overlay (Removed inline mode, now uses modal exclusively) ─── */
 
 /* Fullscreen modal */
 .calendar-fullscreen-backdrop {
@@ -116,13 +106,15 @@
 }
 
 .calendar-fullscreen {
-  width: 100%;
-  height: 100%;
+  width: 95%;
+  height: 85vh;
+  /* Set a definitive height for flex children to size against */
   max-width: 1400px;
   background: rgba(15, 23, 42, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   overflow: hidden;
+  /* Hide overflow at the modal boundary */
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 60px rgba(99, 102, 241, 0.15);
@@ -206,7 +198,11 @@
 
 .calendar-scroll {
   overflow: auto;
+  /* Specifically enables horizontal & vertical scrolling */
   flex: 1;
+  /* Instructs this div to take remaining height */
+  min-height: 0;
+  /* Crucial: allows flex child to shrink smaller than its content, enabling scroll */
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 0 0 4px;
@@ -231,37 +227,55 @@
   flex: 1;
   display: flex;
   position: relative;
+  min-width: 1400px;
+  /* Force horizontal scroll for 48 columns */
 }
 
 .ruler-tick {
   flex: 1;
+  position: relative;
+  /* ensure the absolute span aligns to the tick start */
   text-align: left;
-  padding: 8px 0 8px 4px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  /* slight brightness increase for visibility */
+}
+
+.ruler-tick span {
+  position: absolute;
+  /* Absolute position to ensure it doesn't shift the box model */
+  transform: translateX(-50%);
+  /* Center the text around the precise tick mark */
+  top: 8px;
+  /* Push it down from the top edge */
   font-size: 0.7rem;
   color: #64748b;
   font-weight: 500;
   white-space: nowrap;
-  border-left: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /* ─── Timeline Rows ─── */
 .timeline-row {
   display: flex;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  min-height: 44px;
+  min-height: 60px;
+  /* Increased from 44px for better visibility */
 }
 
 .room-label {
   min-width: 110px;
   flex-shrink: 0;
   padding: 8px 12px;
-  background: rgba(30, 41, 59, 0.8);
+  background: rgba(30, 41, 59, 1);
+  /* Solidify to hide scrolling cells underneath */
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: 10;
+  /* bump z-index above grid */
   display: flex;
   flex-direction: column;
   justify-content: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  /* add distinct edge */
 }
 
 .room-name {
@@ -279,7 +293,13 @@
   flex: 1;
   position: relative;
   background: rgba(34, 197, 94, 0.04);
-  min-height: 40px;
+  min-height: 60px;
+  /* Increased from 40px */
+}
+
+.calendar-timeline-wide {
+  min-width: 1400px;
+  /* Match ruler-track width */
 }
 
 .grid-line {
@@ -287,7 +307,9 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.1);
+  /* Slightly more visible */
+  z-index: 0;
 }
 
 /* ─── Booking Bars ─── */
@@ -313,7 +335,8 @@
 }
 
 .booking-bar-text {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
+  /* Increased font size */
   color: white;
   font-weight: 600;
   white-space: nowrap;

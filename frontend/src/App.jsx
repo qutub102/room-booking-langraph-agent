@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 // Use /api in production (Docker Nginx proxy), and localhost:8000 in local dev
-const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000'
+// const API_BASE = 'http://localhost:8000'
+const API_BASE = 'https://room-booking-langraph-agent.onrender.com'
 
 /** Convert basic markdown (bold, newlines) to HTML */
 function formatMessage(text) {
@@ -118,9 +119,9 @@ function AuthPage({ onLogin }) {
 }
 
 /* ─── Calendar View ──────────────────────────────────────────── */
-const HOUR_START = 8
-const HOUR_END = 21
-const TOTAL_HOURS = HOUR_END - HOUR_START
+const HOUR_START = 0
+const HOUR_END = 23
+const TOTAL_MINUTES = 24 * 60
 
 function timeToMinutes(timeStr) {
   const [h, m] = timeStr.split(':').map(Number)
@@ -128,28 +129,28 @@ function timeToMinutes(timeStr) {
 }
 
 function CalendarView({ schedules, date, onClose, onDateChange }) {
-  const [fullscreen, setFullscreen] = useState(false)
   const timeLabels = []
   for (let h = HOUR_START; h <= HOUR_END; h++) {
     timeLabels.push(`${String(h).padStart(2, '0')}:00`)
+    timeLabels.push(`${String(h).padStart(2, '0')}:30`)
   }
+  // Add the 24:00 (next day midnight) label to complete the grid visually
+  timeLabels.push('24:00')
 
   const getBookingStyle = (booking) => {
     const startMin = timeToMinutes(booking.start_time)
     const endMin = timeToMinutes(booking.end_time)
-    const dayStartMin = HOUR_START * 60
-    const dayEndMin = HOUR_END * 60
-    const totalMin = dayEndMin - dayStartMin
 
-    const clampedStart = Math.max(startMin, dayStartMin)
-    const clampedEnd = Math.min(endMin, dayEndMin)
+    // Total minutes in 24 hours (1440)
+    const totalMin = TOTAL_MINUTES
 
-    const leftPct = ((clampedStart - dayStartMin) / totalMin) * 100
-    const widthPct = ((clampedEnd - clampedStart) / totalMin) * 100
+    const leftPct = (startMin / totalMin) * 100
+    // Fix: width should use strictly the difference in minutes
+    const widthPct = ((endMin - startMin) / totalMin) * 100
 
     return {
       left: `${leftPct}%`,
-      width: `${Math.max(widthPct, 0.5)}%`,
+      width: `${widthPct}%`, // Remove the artificial Math.max(..., 0.5) that was slightly altering width
     }
   }
 
@@ -169,13 +170,7 @@ function CalendarView({ schedules, date, onClose, onDateChange }) {
           <button className="nav-btn" onClick={() => changeDate(1)}>▶</button>
         </div>
         <div className="calendar-actions">
-          {!fullscreen && (
-            <button className="nav-btn" onClick={() => setFullscreen(true)} title="Fullscreen">⤢</button>
-          )}
-          {fullscreen && (
-            <button className="nav-btn" onClick={() => setFullscreen(false)} title="Exit fullscreen">⤡</button>
-          )}
-          <button className="close-btn" onClick={() => { setFullscreen(false); onClose() }}>✕</button>
+          <button className="close-btn" onClick={onClose}>✕</button>
         </div>
       </div>
 
@@ -199,17 +194,21 @@ function CalendarView({ schedules, date, onClose, onDateChange }) {
               <span className="room-name">{room.room_name}</span>
               <span className="room-cap">{room.capacity} seats</span>
             </div>
-            <div className="timeline-track">
+            <div className="timeline-track calendar-timeline-wide">
               {/* Grid lines */}
               {timeLabels.map((_, i) => (
-                <div key={i} className="grid-line" style={{ left: `${(i / TOTAL_HOURS) * 100}%` }} />
+                <div key={i} className="grid-line" style={{ left: `${(i / (timeLabels.length - 1)) * 100}%` }} />
               ))}
               {/* Booking bars */}
               {room.bookings.map((booking, i) => (
                 <div
                   key={i}
                   className="booking-bar"
-                  style={getBookingStyle(booking)}
+                  style={{
+                    ...getBookingStyle(booking),
+                    top: '8px',
+                    bottom: '8px'
+                  }}
                   title={`${booking.organizer} — ${booking.start_time} to ${booking.end_time}`}
                 >
                   <span className="booking-bar-text">
@@ -229,22 +228,12 @@ function CalendarView({ schedules, date, onClose, onDateChange }) {
     </>
   )
 
-  if (fullscreen) {
-    return (
-      <div className="calendar-fullscreen-backdrop" onClick={() => setFullscreen(false)}>
-        <div className="calendar-fullscreen" onClick={(e) => e.stopPropagation()}>
-          <div className="calendar-container">
-            {calendarContent}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="calendar-overlay">
-      <div className="calendar-container">
-        {calendarContent}
+    <div className="calendar-fullscreen-backdrop" onClick={onClose}>
+      <div className="calendar-fullscreen" onClick={(e) => e.stopPropagation()}>
+        <div className="calendar-container">
+          {calendarContent}
+        </div>
       </div>
     </div>
   )
@@ -257,7 +246,7 @@ function ChatApp({ userName, onLogout }) {
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [showCalendar, setShowCalendar] = useState(true)
+  const [showCalendar, setShowCalendar] = useState(false)
   const [calendarData, setCalendarData] = useState(null)
   const [calendarDate, setCalendarDate] = useState(new Date().toISOString().split('T')[0])
   const messagesEndRef = useRef(null)
